@@ -1,0 +1,57 @@
+{
+  "name": "notifyit",
+  "version": "1.0.0",
+  "description": "OnCall Alert Manager - Never miss critical voicemails",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "prisma migrate reset && npm run db:seed"
+  },
+  "keywords": [
+    "pwa",
+    "alerts",
+    "voicemail",
+    "oncall"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@auth/prisma-adapter": "^2.10.0",
+    "@azure/msal-node": "^2.16.2",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
+    "@prisma/client": "^5.22.0",
+    "@tanstack/react-query": "^5.81.5",
+    "bullmq": "^5.56.2",
+    "ioredis": "^5.6.1",
+    "jose": "^6.0.11",
+    "next": "^15.3.5",
+    "next-auth": "^5.0.0-beta.29",
+    "prisma": "^5.22.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "redis": "^5.6.0",
+    "tailwindcss": "^3.4.17",
+    "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.10",
+    "@types/node": "^20.19.5",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@types/web-push": "^3.6.4",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  },
+  "main": "postcss.config.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "type": "commonjs"
+}

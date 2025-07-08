@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  name              String?
+  azureId           String    @unique
+  refreshToken      String?   @db.Text
+  alertSoundId      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  alerts            Alert[]
+  alertSound        Sound?    @relation(fields: [alertSoundId], references: [id])
+  uploadedSounds    Sound[]   @relation("UploadedSounds")
+  pushSubscriptions PushSubscription[]
+}
+
+model Alert {
+  id              String    @id @default(cuid())
+  userId          String
+  emailId         String    @unique
+  subject         String
+  from            String
+  voicemailUrl    String?
+  receivedAt      DateTime
+  acknowledgedAt  DateTime?
+  status          AlertStatus @default(PENDING)
+  createdAt       DateTime  @default(now())
+  
+  user            User      @relation(fields: [userId], references: [id])
+  logs            AlertLog[]
+}
+
+model AlertLog {
+  id        String   @id @default(cuid())
+  alertId   String
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+  
+  alert     Alert    @relation(fields: [alertId], references: [id])
+}
+
+model Sound {
+  id          String    @id @default(cuid())
+  name        String
+  filename    String
+  path        String
+  isDefault   Boolean   @default(false)
+  uploadedBy  String?
+  createdAt   DateTime  @default(now())
+  
+  uploader    User?     @relation("UploadedSounds", fields: [uploadedBy], references: [id])
+  users       User[]
+}
+
+model PushSubscription {
+  id         String   @id @default(cuid())
+  userId     String
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  createdAt  DateTime @default(now())
+  
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+enum AlertStatus {
+  PENDING
+  ACKNOWLEDGED
+  EXPIRED
+}
