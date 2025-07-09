@@ -14,7 +14,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       authorization: {
         params: {
           scope: "openid profile email offline_access Mail.Read",
-          prompt: "consent", // Force consent to ensure we get refresh token
           access_type: "offline",
         },
       },
