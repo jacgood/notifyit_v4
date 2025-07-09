@@ -11,7 +11,7 @@ interface EmailMonitorJob {
 const redis = new Redis({
   host: process.env.REDIS_HOST || 'localhost',
   port: parseInt(process.env.REDIS_PORT || '6379'),
-  maxRetriesPerRequest: 3,
+  maxRetriesPerRequest: null,
 })
 
 export class EmailMonitorWorker {
@@ -56,19 +56,10 @@ export class EmailMonitorWorker {
 
       const monitor = createExchangeMonitor(accessToken)
 
-      // Get user's last check time
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { updatedAt: true }
-      })
-
-      // Use last update time or 1 hour ago as fallback
-      const lastCheckTime = user?.updatedAt || new Date(Date.now() - 60 * 60 * 1000)
-
-      // Monitor for new voicemails
+      // Monitor for new voicemails without time filtering
+      // We'll check against existing alerts in the database instead
       const voicemails = await monitor.monitorForVoicemails({
-        userId,
-        lastCheckTime
+        userId
       })
 
       console.log(`Found ${voicemails.length} new voicemails for user ${userId}`)

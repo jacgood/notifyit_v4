@@ -33,60 +33,52 @@ export class ExchangeMonitor {
 
   async monitorForVoicemails(options: MonitoringOptions): Promise<VoicemailMessage[]> {
     try {
-      // Build filter to only get recent messages with attachments and specific subject
-      const filters = [
-        'hasAttachments eq true',
-        'isRead eq false',
-        "startswith(subject, 'Voice mail from')"
-      ]
-      
-      // Add time filter if we have a last check time
-      if (options.lastCheckTime) {
-        const timeFilter = `receivedDateTime ge ${options.lastCheckTime.toISOString()}`
-        filters.push(timeFilter)
-      }
-
+      // Fetch recent emails without any filter - do all filtering client-side
       const messages = await this.graphClient.getMessages({
-        filter: filters.join(' and '),
         orderBy: 'receivedDateTime desc',
-        top: 50
+        top: 100
       })
 
       const voicemailMessages: VoicemailMessage[] = []
 
       for (const message of messages.value || []) {
-        if (this.isVoicemailMessage(message)) {
-          // Get full message with attachments
-          const fullMessage = await this.graphClient.getMessage(message.id)
-          
-          const voicemailMessage: VoicemailMessage = {
-            id: message.id,
-            subject: message.subject || 'No Subject',
-            from: message.from?.emailAddress?.address || 'Unknown',
-            receivedDateTime: message.receivedDateTime,
-            hasAttachments: message.hasAttachments || false,
-            attachments: []
-          }
+        // Client-side filtering for conditions we removed from server filter
+        if (!this.isVoicemailMessage(message)) continue;
+        if (!message.hasAttachments) continue;
+        if (message.isRead) continue;
+        
+        // Skip time filtering - we'll check against existing alerts in the database instead
+        
+        // Get full message with attachments
+        const fullMessage = await this.graphClient.getMessage(message.id)
+        
+        const voicemailMessage: VoicemailMessage = {
+          id: message.id,
+          subject: message.subject || 'No Subject',
+          from: message.from?.emailAddress?.address || 'Unknown',
+          receivedDateTime: message.receivedDateTime,
+          hasAttachments: message.hasAttachments || false,
+          attachments: []
+        }
 
-          // Process attachments
-          if (fullMessage.attachments && fullMessage.attachments.length > 0) {
-            for (const attachment of fullMessage.attachments) {
-              if (this.isAudioAttachment(attachment)) {
-                voicemailMessage.attachments.push({
-                  id: attachment.id,
-                  name: attachment.name || 'voicemail.wav',
-                  contentType: attachment.contentType || 'audio/wav',
-                  size: attachment.size || 0,
-                  contentBytes: attachment.contentBytes
-                })
-              }
+        // Process attachments
+        if (fullMessage.attachments && fullMessage.attachments.length > 0) {
+          for (const attachment of fullMessage.attachments) {
+            if (this.isAudioAttachment(attachment)) {
+              voicemailMessage.attachments.push({
+                id: attachment.id,
+                name: attachment.name || 'voicemail.wav',
+                contentType: attachment.contentType || 'audio/wav',
+                size: attachment.size || 0,
+                contentBytes: attachment.contentBytes
+              })
             }
           }
+        }
 
-          // Only include if it has audio attachments
-          if (voicemailMessage.attachments.length > 0) {
-            voicemailMessages.push(voicemailMessage)
-          }
+        // Only include if it has audio attachments
+        if (voicemailMessage.attachments.length > 0) {
+          voicemailMessages.push(voicemailMessage)
         }
       }
 

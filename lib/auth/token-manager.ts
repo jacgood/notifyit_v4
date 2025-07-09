@@ -6,23 +6,31 @@ export async function getAccessTokenForUser(userId: string): Promise<string | nu
   try {
     console.log('Getting access token for user:', userId)
     
-    // Get user's refresh token
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { 
-        refreshToken: true,
-        email: true 
+    // Get user's Microsoft account with refresh token
+    const account = await prisma.account.findFirst({
+      where: {
+        userId: userId,
+        provider: 'microsoft-entra-id',
+        refresh_token: { not: null }
+      },
+      select: {
+        refresh_token: true,
+        user: {
+          select: {
+            email: true
+          }
+        }
       }
     })
 
-    console.log('User found:', { 
-      hasUser: !!user, 
-      hasRefreshToken: !!user?.refreshToken,
-      email: user?.email,
-      refreshTokenLength: user?.refreshToken?.length 
+    console.log('Account found:', { 
+      hasAccount: !!account, 
+      hasRefreshToken: !!account?.refresh_token,
+      email: account?.user?.email,
+      refreshTokenLength: account?.refresh_token?.length 
     })
 
-    if (!user?.refreshToken) {
+    if (!account?.refresh_token) {
       console.error('No refresh token found for user:', userId)
       return null
     }
@@ -35,7 +43,7 @@ export async function getAccessTokenForUser(userId: string): Promise<string | nu
       
       // Try to get a new access token using the refresh token
       const tokenResponse = await cca.acquireTokenByRefreshToken({
-        refreshToken: user.refreshToken,
+        refreshToken: account.refresh_token,
         scopes: scopes,
         forceCache: false
       })
@@ -62,9 +70,12 @@ export async function getAccessTokenForUser(userId: string): Promise<string | nu
         console.error('Refresh token is invalid or expired. User needs to re-authenticate.')
         
         // Clear the invalid refresh token
-        await prisma.user.update({
-          where: { id: userId },
-          data: { refreshToken: null }
+        await prisma.account.updateMany({
+          where: { 
+            userId: userId,
+            provider: 'microsoft-entra-id'
+          },
+          data: { refresh_token: null }
         })
       }
     }

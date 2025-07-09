@@ -5,7 +5,7 @@ import { prisma } from '@/lib/db/prisma'
 const redis = new Redis({
   host: process.env.REDIS_HOST || 'localhost',
   port: parseInt(process.env.REDIS_PORT || '6379'),
-  maxRetriesPerRequest: 3,
+  maxRetriesPerRequest: null,
 })
 
 export class EmailMonitorScheduler {
@@ -37,14 +37,14 @@ export class EmailMonitorScheduler {
         }
       )
 
-      // Schedule recurring job every 5 minutes
+      // Schedule recurring job every 5 min
       await this.queue.add(
         `monitor-user-${userId}-recurring`,
         { userId, accessToken },
         {
           jobId: `monitor-user-${userId}-recurring`,
           repeat: {
-            pattern: '*/5 * * * *', // Every 5 minutes
+            every: 300000, // Every 5 min (300,000 milliseconds)
           },
         }
       )
@@ -62,7 +62,7 @@ export class EmailMonitorScheduler {
       await this.queue.removeRepeatable(
         `monitor-user-${userId}-recurring`,
         {
-          pattern: '*/5 * * * *',
+          every: 300000, // Every 5 min (300,000 milliseconds)
         }
       )
 
@@ -75,22 +75,36 @@ export class EmailMonitorScheduler {
 
   async scheduleAllActiveUsers() {
     try {
-      // Get all users with refresh tokens (active users)
+      // Get all users with Microsoft accounts that have refresh tokens (active users)
       const users = await prisma.user.findMany({
         where: {
-          refreshToken: { not: null }
+          accounts: {
+            some: {
+              provider: 'microsoft-entra-id',
+              refresh_token: { not: null }
+            }
+          }
         },
         select: {
           id: true,
-          refreshToken: true
+          accounts: {
+            where: {
+              provider: 'microsoft-entra-id',
+              refresh_token: { not: null }
+            },
+            select: {
+              refresh_token: true
+            }
+          }
         }
       })
 
       console.log(`Scheduling monitoring for ${users.length} active users`)
 
       for (const user of users) {
-        if (user.refreshToken) {
-          await this.scheduleUserMonitoring(user.id, user.refreshToken)
+        const refreshToken = user.accounts[0]?.refresh_token
+        if (refreshToken) {
+          await this.scheduleUserMonitoring(user.id, refreshToken)
         }
       }
     } catch (error) {
