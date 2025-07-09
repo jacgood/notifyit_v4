@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { ServiceWorkerProvider } from '@/components/providers/ServiceWorkerProvider'
 import { SessionProvider } from '@/components/SessionProvider'
+import { QueryProvider } from '@/components/providers/QueryProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -29,9 +30,11 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className={`${inter.className} bg-black text-white min-h-screen`}>
         <SessionProvider>
-          <ServiceWorkerProvider>
-            {children}
-          </ServiceWorkerProvider>
+          <QueryProvider>
+            <ServiceWorkerProvider>
+              {children}
+            </ServiceWorkerProvider>
+          </QueryProvider>
         </SessionProvider>
       </body>
     </html>
