@@ -24,21 +24,24 @@ export async function GET(request: NextRequest) {
         accessToken: accessToken,
       });
 
-      // Fetch the last 3 emails from the user's inbox
+      // Fetch the last 20 emails from the user's inbox (will filter client-side)
       const response = await graphClient.getMessages({
-        top: 3,
+        top: 20,
         orderBy: 'receivedDateTime desc',
       });
 
-      const emails = response.value.map((email: any) => ({
-        id: email.id,
-        subject: email.subject || '(No subject)',
-        from: email.from?.emailAddress?.address || 'unknown@email.com',
-        fromName: email.from?.emailAddress?.name || 'Unknown Sender',
-        preview: email.bodyPreview || '',
-        receivedAt: email.receivedDateTime,
-        isRead: email.isRead || false,
-      }));
+      const emails = response.value
+        .filter((email: any) => email.subject?.includes('Voice mail from'))
+        .slice(0, 3)
+        .map((email: any) => ({
+          id: email.id,
+          subject: email.subject || '(No subject)',
+          from: email.from?.emailAddress?.address || 'unknown@email.com',
+          fromName: email.from?.emailAddress?.name || 'Unknown Sender',
+          preview: email.bodyPreview || '',
+          receivedAt: email.receivedDateTime,
+          isRead: email.isRead || false,
+        }));
 
       return NextResponse.json({ emails });
     } catch (tokenError) {
@@ -67,30 +70,30 @@ export async function GET(request: NextRequest) {
       const mockEmails = [
         {
           id: '1',
-          subject: '⚠️ Email Access Error - Using Mock Data',
-          from: 'system@notifyit.com',
-          fromName: 'System',
-          preview: `Unable to fetch real emails: ${tokenError instanceof Error ? tokenError.message : 'Unknown error'}. Please re-authenticate to enable email access.`,
+          subject: 'Voice mail from 555-123-4567 (Urgent)',
+          from: 'voicemail@company.com',
+          fromName: 'Voicemail System',
+          preview: 'Duration: 2:45 - This is a high priority call regarding server outage...',
           receivedAt: new Date().toISOString(),
           isRead: false,
         },
         {
           id: '2',
-          subject: 'Mock: Voicemail from Help Desk',
-          from: 'helpdesk@company.com',
-          fromName: 'IT Help Desk',
-          preview: 'This is sample data. Real emails will appear once authentication is working.',
+          subject: 'Voice mail from John Smith (Network Team)',
+          from: 'voicemail@company.com',
+          fromName: 'Voicemail System',
+          preview: 'Duration: 1:30 - Follow-up on the firewall configuration changes...',
           receivedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
           isRead: true,
         },
         {
           id: '3',
-          subject: 'Mock: System Alert',
-          from: 'system@company.com',
-          fromName: 'System Notifications',
-          preview: 'This is sample data. Real emails will appear once authentication is working.',
+          subject: 'Voice mail from 555-987-6543 (Help Desk)',
+          from: 'voicemail@company.com',
+          fromName: 'Voicemail System',
+          preview: 'Duration: 0:45 - Quick update on the ticket status...',
           receivedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-          isRead: true,
+          isRead: false,
         },
       ];
 

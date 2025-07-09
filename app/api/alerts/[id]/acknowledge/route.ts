@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
-import { getServerSession } from '@/lib/auth/session';
+import { auth } from '@/lib/auth';
 import { AlertStatus } from '@prisma/client';
+import { createGraphClient } from '@/lib/auth/graph-client';
+import { getUserToken } from '@/lib/auth/get-user-token';
 
 // POST /api/alerts/[id]/acknowledge - Acknowledge an alert
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   try {
-    const session = await getServerSession();
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -54,6 +56,24 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         details: `Alert acknowledged by user ${session.user.email}`,
       },
     });
+
+    // Mark the corresponding email as read
+    try {
+      const { accessToken } = await getUserToken(session.user.id);
+      
+      if (accessToken) {
+        const graphClient = createGraphClient({
+          accessToken: accessToken,
+        });
+
+        await graphClient.updateMessage(alert.emailId, {
+          isRead: true,
+        });
+      }
+    } catch (emailError) {
+      console.error('Failed to mark email as read:', emailError);
+      // Don't fail the whole request if email marking fails
+    }
 
     // Calculate response time
     const responseTime = updatedAlert.acknowledgedAt

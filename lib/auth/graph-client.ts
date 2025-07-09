@@ -114,6 +114,16 @@ export class GraphClient {
     }
   }
 
+  async updateMessage(messageId: string, data: any) {
+    try {
+      return await this.client.api(`/me/messages/${messageId}`)
+        .patch(data)
+    } catch (error) {
+      console.error('Error updating message:', error)
+      throw error
+    }
+  }
+
   async createSubscription(notificationUrl: string) {
     try {
       const subscription = {

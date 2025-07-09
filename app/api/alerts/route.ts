@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
-import { getServerSession } from '@/lib/auth/session';
+import { auth } from '@/lib/auth';
 import { webpush } from '@/lib/push/web-push';
 import { AlertStatus } from '@prisma/client';
 
 // GET /api/alerts - Get all alerts for the current user
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
 // POST /api/alerts - Create a new alert
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },

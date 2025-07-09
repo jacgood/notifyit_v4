@@ -2,7 +2,6 @@
 
 import { useState, useRef } from 'react';
 import { AlertList, AlertListRef } from '@/components/features/AlertList';
-import { EmailList } from '@/components/features/EmailList';
 import { AlertStatus } from '@prisma/client';
 import { urlBase64ToUint8Array } from '@/lib/utils/push-test';
 import { UserProfile } from '@/components/features/UserProfile';
@@ -210,15 +209,15 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Email List - Last 3 emails */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-white mb-4">Recent Emails</h2>
-          <EmailList />
-        </div>
-
-        {/* Alert List */}
+        {/* Alerts */}
         <div>
-          <h2 className="text-xl font-semibold text-white mb-4">Alerts</h2>
+          <h2 className="text-xl font-semibold text-white mb-4">
+            {activeTab === 'all' 
+              ? 'All Alerts' 
+              : activeTab === 'PENDING' 
+              ? 'Pending Alerts' 
+              : 'Acknowledged Alerts'}
+          </h2>
           <AlertList 
             ref={alertListRef}
             status={activeTab === 'all' ? undefined : activeTab}
