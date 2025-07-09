@@ -1,3 +1,4 @@
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/jacgood/notifyit_v4?utm_source=oss&utm_medium=github&utm_campaign=jacgood%2Fnotifyit_v4&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 # OnCall Alert Manager
 
 A Progressive Web App (PWA) that ensures on-call network engineers never miss critical helpdesk voicemails by providing persistent, acknowledgment-required alerts.
