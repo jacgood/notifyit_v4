@@ -4,11 +4,12 @@ import { useState, useRef } from 'react';
 import { AlertList, AlertListRef } from '@/components/features/AlertList';
 import { AlertStatus } from '@prisma/client';
 import { urlBase64ToUint8Array } from '@/lib/utils/push-test';
-import { VapidKeyTest } from './test-vapid';
+import { UserProfile } from '@/components/features/UserProfile';
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<'all' | AlertStatus>('all');
   const [notificationStatus, setNotificationStatus] = useState<'idle' | 'enabling' | 'enabled' | 'error'>('idle');
+  const [checkingEmails, setCheckingEmails] = useState(false);
   const alertListRef = useRef<AlertListRef>(null);
 
   const createTestAlert = async () => {
@@ -98,35 +99,80 @@ export default function DashboardPage() {
     }
   };
 
+  const checkForVoicemails = async () => {
+    setCheckingEmails(true);
+    try {
+      const response = await fetch('/api/email-monitor/auth0', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'check' })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Email check result:', data);
+        alert(`Found ${data.count || 0} new voicemails`);
+        
+        // Refresh the alert list if any voicemails were found
+        if (data.count > 0) {
+          alertListRef.current?.refresh();
+        }
+      } else {
+        const error = await response.json();
+        console.error('Email check error:', error);
+        
+        if (response.status === 401) {
+          alert('Authentication required. Please sign in with your Microsoft account to access email monitoring.');
+        } else {
+          alert(`Failed to check emails: ${error.error || 'Unknown error'}${error.details ? '\nDetails: ' + error.details : ''}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking emails:', error);
+      alert('Failed to check emails');
+    } finally {
+      setCheckingEmails(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black p-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-white">OnCall Alert Manager</h1>
-          <div className="flex gap-2">
-            <button
-              onClick={requestNotificationPermission}
-              disabled={notificationStatus === 'enabling' || notificationStatus === 'enabled'}
-              className={`px-4 py-2 text-white rounded-lg transition-colors ${
-                notificationStatus === 'enabled' 
-                  ? 'bg-green-600 hover:bg-green-700' 
-                  : notificationStatus === 'enabling'
-                  ? 'bg-gray-600 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700'
-              }`}
-            >
-              {notificationStatus === 'enabling' && 'Enabling...'}
-              {notificationStatus === 'enabled' && 'Notifications Enabled ✓'}
-              {notificationStatus === 'idle' && 'Enable Notifications'}
-              {notificationStatus === 'error' && 'Enable Notifications'}
-            </button>
-            <button
-              onClick={createTestAlert}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-            >
-              Create Test Alert
-            </button>
-          </div>
+          <UserProfile />
+        </div>
+        
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={requestNotificationPermission}
+            disabled={notificationStatus === 'enabling' || notificationStatus === 'enabled'}
+            className={`px-4 py-2 text-white rounded-lg transition-colors ${
+              notificationStatus === 'enabled' 
+                ? 'bg-green-600 hover:bg-green-700' 
+                : notificationStatus === 'enabling'
+                ? 'bg-gray-600 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700'
+            }`}
+          >
+            {notificationStatus === 'enabling' && 'Enabling...'}
+            {notificationStatus === 'enabled' && 'Notifications Enabled ✓'}
+            {notificationStatus === 'idle' && 'Enable Notifications'}
+            {notificationStatus === 'error' && 'Enable Notifications'}
+          </button>
+          <button
+            onClick={createTestAlert}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Create Test Alert
+          </button>
+          <button
+            onClick={checkForVoicemails}
+            disabled={checkingEmails}
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {checkingEmails ? 'Checking...' : 'Check for Voicemails'}
+          </button>
         </div>
 
         {/* Tab Navigation */}
@@ -161,11 +207,6 @@ export default function DashboardPage() {
           >
             Acknowledged
           </button>
-        </div>
-
-        {/* Debug Section */}
-        <div className="mb-6">
-          <VapidKeyTest />
         </div>
 
         {/* Alert List */}

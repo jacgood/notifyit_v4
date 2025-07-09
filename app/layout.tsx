@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { ServiceWorkerProvider } from '@/components/providers/ServiceWorkerProvider'
+import { SessionProvider } from '@/components/SessionProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -27,9 +28,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.className} bg-black text-white min-h-screen`}>
-        <ServiceWorkerProvider>
-          {children}
-        </ServiceWorkerProvider>
+        <SessionProvider>
+          <ServiceWorkerProvider>
+            {children}
+          </ServiceWorkerProvider>
+        </SessionProvider>
       </body>
     </html>
   )

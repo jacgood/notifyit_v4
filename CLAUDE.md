@@ -62,9 +62,9 @@ Backend:
   - Redis (queue backend)
 
 Authentication:
-  - Azure AD OAuth 2.0
-  - Microsoft Graph permissions
-  - Mock authentication for local development
+  - Auth0 Universal Login (Primary)
+  - Azure AD OAuth 2.0 (For Microsoft Graph API access)
+  - Automatic user sync between Auth0 and database
 
 Deployment:
   - Self-hosted or Docker
@@ -256,14 +256,17 @@ DATABASE_URL="postgresql://username:password@localhost:5432/oncall_alerts"
 REDIS_HOST="localhost"
 REDIS_PORT="6379"
 
-# Azure AD
+# Auth0 Configuration
+AUTH0_DOMAIN="your-auth0-domain.auth0.com"
+AUTH0_CLIENT_ID="your-auth0-client-id"
+AUTH0_CLIENT_SECRET="your-auth0-client-secret"
+AUTH0_SECRET="your-32-character-secret"
+APP_BASE_URL="http://localhost:3000"
+
+# Azure AD (for Microsoft Graph API access)
 AZURE_CLIENT_ID="your-client-id"
 AZURE_CLIENT_SECRET="your-client-secret"
 AZURE_TENANT_ID="your-tenant-id"
-
-# App
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="generate-with-openssl-rand-base64-32"
 
 # Push Notifications
 NEXT_PUBLIC_VAPID_PUBLIC_KEY="generate-with-web-push"
@@ -383,6 +386,47 @@ VAPID_EMAIL="mailto:your-email@company.com"
 - Verify setTimeout not cleared
 - Check browser background policies
 - Test with screen locked
+
+### Azure AD Authentication Issues
+
+#### PKCE Error (AADSTS9002325)
+**Error:** `AADSTS9002325: Proof Key for Code Exchange is required for cross-origin authorization code redemption`
+**Solution:** The codebase now includes proper PKCE implementation with:
+- Code verifier generation in signin route
+- Code challenge sent to Azure AD
+- Code verifier stored in cookie for callback
+- Proper token exchange with PKCE verifier
+
+#### Public Client Error (AADSTS700025) - CURRENT ISSUE
+**Error:** `AADSTS700025: Client is public so neither 'client_assertion' nor 'client_secret' should be presented`
+**Root Cause:** Azure AD app registration is configured as a public client instead of confidential client
+**Symptoms:** Authentication redirects to `/login?error=callback_error`
+
+**Fix Required in Azure Portal:**
+1. Go to Azure Portal → Azure Active Directory → App registrations
+2. Select your app registration
+3. Go to **Authentication** section
+4. Under **Advanced settings**:
+   - Set **Allow public client flows** to **No**
+   - Ensure **Supported account types** is set to single tenant
+5. Go to **Certificates & secrets** section
+6. Ensure you have a valid **Client secret** 
+7. Save changes
+
+**Alternative Solution:** Modify the code to use PublicClientApplication instead of ConfidentialClientApplication if you want to keep it as public client, but this is not recommended for server-side applications.
+
+**Current Status:** 
+- ✅ PKCE implementation completed
+- ✅ Microsoft Graph API client ready
+- ✅ Email monitoring system implemented
+- ❌ Azure AD app registration needs to be configured as confidential client
+- ❌ Authentication flow blocked until Azure AD configuration is fixed
+
+**Next Steps:**
+1. Fix Azure AD app registration (public → confidential)
+2. Test complete authentication flow
+3. Verify Exchange email monitoring works
+4. Implement Settings page and sound management
 
 ## Development Commands
 

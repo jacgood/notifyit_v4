@@ -33,6 +33,12 @@ async function main() {
       path: '/sounds/high-priority.wav',
       isDefault: true,
     },
+    {
+      name: 'Bell Notification',
+      filename: 'bell-notification-337658.mp3',
+      path: '/sounds/bell-notification-337658.mp3',
+      isDefault: true,
+    },
   ]
 
   for (const sound of defaultSounds) {

@@ -1,38 +1,28 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { signIn } from 'next-auth/react'
 
-export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+function LoginContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  
+  useEffect(() => {
+    // Check for error in URL params
+    const urlError = searchParams.get('error')
+    
+    if (urlError) {
+      console.error('Authentication error:', urlError)
+      // Handle authentication errors
+    }
+  }, [searchParams])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-
+  const handleMicrosoftLogin = async () => {
     try {
-      const response = await fetch('/api/auth/signin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      })
-
-      if (response.ok) {
-        router.push('/dashboard')
-      } else {
-        const data = await response.json()
-        setError(data.error || 'Sign in failed')
-      }
-    } catch (err) {
-      setError('Network error. Please try again.')
-    } finally {
-      setLoading(false)
+      await signIn('microsoft-entra-id', { callbackUrl: '/dashboard' })
+    } catch (error) {
+      console.error('Sign in error:', error)
     }
   }
 
@@ -44,41 +34,32 @@ export default function LoginPage() {
           <p className="mt-2 text-gray-400">OnCall Alert Manager</p>
         </div>
         
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-300">
-              Email Address
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="mt-1 block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
-              placeholder="Enter your email"
-            />
-          </div>
-          
-          {error && (
-            <div className="text-red-500 text-sm">{error}</div>
-          )}
-          
+        <div className="space-y-4">
+          {/* Microsoft Login Button */}
           <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+            onClick={handleMicrosoftLogin}
+            className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.374 0 0 5.374 0 12s5.374 12 12 12 12-5.374 12-12S18.626 0 12 0zM6.75 18.75H3.75v-6h3v6zm-1.5-6.75c-.966 0-1.75-.784-1.75-1.75S4.284 8.25 5.25 8.25s1.75.784 1.75 1.75-.784 1.75-1.75 1.75zM20.25 18.75h-3v-2.906c0-1.121-.021-2.564-1.563-2.564-1.566 0-1.806 1.223-1.806 2.481v2.989h-3v-6h2.884v.816h.041c.401-.762 1.382-1.566 2.845-1.566 3.041 0 3.602 2.003 3.602 4.61v2.64z"/>
+            </svg>
+            Sign in with Microsoft
           </button>
           
-          <div className="text-xs text-gray-500">
-            <p>Mock users for testing:</p>
-            <p>• dev@example.com</p>
-            <p>• engineer@example.com</p>
+          <div className="text-xs text-gray-500 text-center">
+            <p>Secure authentication powered by NextAuth.js</p>
+            <p>Sign in with your Azure AD account to access the dashboard</p>
           </div>
-        </form>
+        </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   )
 }

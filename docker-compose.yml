@@ -42,6 +42,12 @@ services:
       NEXTAUTH_URL: "http://localhost:3000"
       NEXTAUTH_SECRET: "generated-nextauth-secret-key-here"
       NODE_ENV: development
+      AZURE_CLIENT_ID: "${AZURE_CLIENT_ID}"
+      AZURE_CLIENT_SECRET: "${AZURE_CLIENT_SECRET}"
+      AZURE_TENANT_ID: "${AZURE_TENANT_ID}"
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: "${NEXT_PUBLIC_VAPID_PUBLIC_KEY}"
+      VAPID_PRIVATE_KEY: "${VAPID_PRIVATE_KEY}"
+      VAPID_EMAIL: "${VAPID_EMAIL}"
     volumes:
       - ./app:/app/app
       - ./components:/app/components
